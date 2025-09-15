@@ -8,6 +8,7 @@ route.get('/', userController.homeRoute);
 route.post('/signUp',userController.userSignUpRoute);
 route.post('/signIn',userController.userSignInRoute);
 route.get('/dashboard',auth , userController.dashboardRoute)
+route.get('/verify/:token', userController.verifyUserRoute);
 
 export default route;
 

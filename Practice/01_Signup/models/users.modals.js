@@ -1,6 +1,5 @@
 import mongoose from "mongoose";
 import bcrypt from "bcrypt";
-import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema(
   {
@@ -20,25 +19,23 @@ const userSchema = new mongoose.Schema(
       required: true,
       minLength: 6,
     },
-    // Mail Data
-    to: {
-      type: String,
-      required: false,
-      unique: false,
-      lowercase: true,
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
-    subject: {
+    role:{
       type: String,
-      required: false,
+      enum:["user","admin"],
+      default:"user",
     },
-    mailBody: {
-      type: String,
-      required: false,
+    createProfile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Profile",
     },
-    token: {
-      type: String,
-      required: false,
-    },
+    // token: {
+    //   type: String,
+    //   required: false,
+    // },
   },
   {
     timestamps: true,
