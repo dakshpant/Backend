@@ -11,9 +11,10 @@ export default {
 
   decryptText: (req, res) => {
     const { encryptedData } = req.body;
-    if (!encryptedData) return res.status(400).json({ error: "Encrypted data is required" });
+    if (!encryptedData)
+      return res.status(400).json({ error: "Encrypted data is required" });
 
     const decryptedText = decrypt(encryptedData);
     res.json({ decryptedText });
-  }
+  },
 };
