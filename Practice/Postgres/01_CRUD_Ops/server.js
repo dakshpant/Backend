@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import route from "./routes/user.routes.js";
 
@@ -7,6 +8,8 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser()); 
 
 app.use(express.static("public"));
 app.set("view engine", "ejs");
