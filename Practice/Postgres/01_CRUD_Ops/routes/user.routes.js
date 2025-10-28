@@ -1,7 +1,7 @@
 import express from "express";
 import User from "../models/user.model.js";
 import userController from "../controllers/user.controller.js";
-import { verifyToken, generateToken } from "../helpers/jwt.js";
+import { verifyToken,  } from "../helpers/jwt.js";
 
 const route = express.Router();
 
