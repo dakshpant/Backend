@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { connectDB } from "./config/db.js";
 import route from "./routes/user.routes.js";
+import errorHandler from "./middleware/errorHandler.js";
 
 dotenv.config();
 
@@ -18,6 +19,9 @@ await connectDB();
 
 // Routes
 app.use("/", route);
+
+// Error Handler
+app.use(errorHandler);
 
 // app.use("/",(req,res)=>{
 //     res.status(200).json("Hello World — Express + PostgreSQL + ES6");

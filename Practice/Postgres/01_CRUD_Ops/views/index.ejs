@@ -105,13 +105,13 @@
     <%= title %>
   </h1>
 
-  <button id="OpenModel">Create New User</button>
   <!-- CREATE / UPDATE FORM -->
-  <div class="modal" id="userModal">
+  <!-- <button id="OpenModel">Create New User</button> -->
+  <!-- <div class="modal" id="userModal">
     <div class="modal-content">
       <button class="close-btn" id="closeModalBtn">&times;</button>
       <h2 id="modalTitle">Create User</h2>
-      <form id="userForm">
+      <form id="userForm" method="POST" action="/api/users">
         <input type="hidden" id="userId" name="userId">
         <label for="name">Name:</label>
         <input type="text" id="name" name="name" placeholder="Enter Name" required>
@@ -125,20 +125,7 @@
         <button type="submit">Create User</button>
       </form>
     </div>
-  </div>
-  <!-- <form id="userForm">
-    <input type="hidden" id="userId" name="userId">
-    <label for="name">Name:</label>
-    <input type="text" id="name" name="name" placeholder="Enter Name" required>
-
-    <label for="email">Email:</label>
-    <input type="email" id="email" name="email" placeholder="Enter Email" required>
-
-    <label for="password">Password:</label>
-    <input type="password" id="password" name="password" placeholder="Enter Password" required>
-
-    <button type="submit">Create User</button>
-  </form> -->
+  </div> -->
 
   <!-- USER LIST -->
   <ul id="userList">
@@ -162,123 +149,169 @@
   </ul>
 
   <script>
-    const modal = document.getElementById('userModal');
-    const openModalBtn = document.getElementById('OpenModel');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const userForm = document.getElementById('userForm');
-    const userList = document.getElementById('userList');
-    const userIdInput = document.getElementById('userId');
-    const modalTitle = document.getElementById('modalTitle');
-    const submitBtn = userForm.querySelector('button');
-    // Open modal
-    openModalBtn.onclick = function () {
-      modal.style.display = "flex";
-      modalTitle.innerText = 'Create User';
-      submitBtn.innerText = 'Create User';
-      userForm.name.value = '';
-      userForm.email.value = '';
-      userForm.password.value = ''; 
-      userForm.reset();
-      userIdInput.value = '';
+  const modal = document.getElementById('userModal');
+  const openModalBtn = document.getElementById('OpenModel');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const userForm = document.getElementById('userForm');
+  const userList = document.getElementById('userList');
+  const userIdInput = document.getElementById('userId');
+  const modalTitle = document.getElementById('modalTitle');
+  const submitBtn = userForm.querySelector('button');
+
+  // --- Popup Modal ---
+  function showPopup(message, type = 'success') {
+    let popup = document.getElementById('popup');
+    if (!popup) {
+      popup = document.createElement('div');
+      popup.id = 'popup';
+      popup.style = `
+        display:none;
+        position:fixed;
+        top:50%;
+        left:50%;
+        transform:translate(-50%, -50%);
+        background:white;
+        padding:20px 30px;
+        border-radius:8px;
+        box-shadow:0 4px 10px rgba(0,0,0,0.3);
+        text-align:center;
+        z-index:1000;
+      `;
+      popup.innerHTML = `
+        <p id="popupMessage" style="margin-bottom:10px;font-size:16px;"></p>
+        <button onclick="closePopup()" style="
+          background-color:#007bff;
+          color:white;
+          border:none;
+          padding:6px 12px;
+          border-radius:4px;
+          cursor:pointer;
+        ">OK</button>
+      `;
+      document.body.appendChild(popup);
     }
-    // Close modal
-    closeModalBtn.onclick = () => modal.style.display = "none";
-    window.onclick = function (event) {
-      if (event.target == modal) {
+
+    const popupMessage = document.getElementById('popupMessage');
+    popupMessage.innerText = message;
+
+    popup.style.border = type === 'error' ? '2px solid #dc3545' : '2px solid #28a745';
+    popupMessage.style.color = type === 'error' ? '#dc3545' : '#28a745';
+    popup.style.display = 'block';
+  }
+
+  function closePopup() {
+    const popup = document.getElementById('popup');
+    popup.style.display = 'none';
+  }
+
+  // --- Modal Controls ---
+  openModalBtn.onclick = function () {
+    modal.style.display = "flex";
+    modalTitle.innerText = 'Create User';
+    submitBtn.innerText = 'Create User';
+    userForm.reset();
+    userIdInput.value = '';
+  }
+
+  closeModalBtn.onclick = () => modal.style.display = "none";
+  window.onclick = function (event) {
+    if (event.target == modal) modal.style.display = "none";
+  }
+
+  // --- Fetch users and display them ---
+  async function refreshUserList() {
+    try {
+      const res = await fetch('/api/users');
+      const data = await res.json();
+      const users = data.data || [];
+
+      userList.innerHTML = users.length
+        ? users.map(u => `
+          <li>
+            <div><strong>${u.name}</strong> — ${u.email}</div>
+            <div class="actions">
+              <button onclick="editUser(${u.id}, '${u.name}', '${u.email}')">Edit</button>
+              <button onclick="deleteUser(${u.id})" style="background-color:#dc3545">Delete</button>
+            </div>
+          </li>
+        `).join('')
+        : '<li>No users found</li>';
+    } catch (err) {
+      console.error('Error fetching users:', err);
+      userList.innerHTML = '<li>Failed to load users</li>';
+    }
+  }
+
+  // --- Handle Create / Update ---
+  userForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = userIdInput.value;
+    const name = userForm.name.value.trim();
+    const email = userForm.email.value.trim();
+    const password = userForm.password.value.trim();
+
+    if (!name || !email || !password) {
+      showPopup('All fields are required!', 'error');
+      return;
+    }
+
+    try {
+      const res = await fetch(id ? `/api/users/${id}` : '/api/users', {
+        method: id ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.code === 200) {
+        showPopup(data.message || (id ? 'User updated successfully!' : 'User created successfully!'));
         modal.style.display = "none";
+        userForm.reset();
+        userIdInput.value = '';
+        refreshUserList();
+      } else {
+        showPopup(data.message || 'Error occurred', 'error');
       }
+    } catch (err) {
+      console.error('Error submitting form:', err);
+      showPopup('Network error', 'error');
     }
-    //Fetch users and display them in the list
-    async function refreshUserList() {
-      try {
-        const res = await fetch('/getAllUsers/json');
-        const data = await res.json();
-        const users = data.user || [];
+  });
 
-        userList.innerHTML = users.length
-          ? users.map(u => `
-            <li>
-              <div>
-                <strong>${u.name}</strong> — ${u.email}
-              </div>
-              <div class="actions">
-                <button onclick="editUser(${u.id}, '${u.name}', '${u.email}')">Edit</button>
-                <button onclick="deleteUser(${u.id})" style="background-color:#dc3545">Delete</button>
-              </div>
-            </li>
-          `).join('')
-          : '<li>No users found</li>';
-      } catch (err) {
-        console.error('Error fetching users:', err);
-        userList.innerHTML = '<li>Failed to load users</li>';
+  // --- Edit user ---
+  function editUser(id, name, email) {
+    modal.style.display = "flex";
+    modalTitle.innerText = 'Edit User';
+    submitBtn.innerText = 'Update User';
+    userIdInput.value = id;
+    userForm.name.value = name;
+    userForm.email.value = email;
+    userForm.password.value = '';
+  }
+
+  // --- Delete user ---
+  async function deleteUser(id) {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+
+      if (res.ok && data.code === 200) {
+        showPopup(data.message || 'User deleted successfully!');
+        refreshUserList();
+      } else {
+        showPopup(data.message || 'Failed to delete user', 'error');
       }
+    } catch (err) {
+      console.error('Error deleting user:', err);
+      showPopup('Network error', 'error');
     }
+  }
 
-    //Handle Create / Update
-    userForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = userIdInput.value;
-      const name = userForm.name.value.trim();
-      const email = userForm.email.value.trim();
-      const password = userForm.password.value.trim();
+  refreshUserList();
+</script>
 
-      if (!name || !email || !password) {
-        alert('All fields are required!');
-        return;
-      }
-
-      try {
-        const res = await fetch(id ? `/updateUser/${id}` : '/createUser', {
-          method: id ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, email, password }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-          alert(id ? 'User updated successfully!' : 'User created successfully!');
-          userForm.reset();
-          userIdInput.value = '';
-          userForm.querySelector('button').innerText = 'Create User';
-          refreshUserList(); // Refresh after submit
-        } else {
-          alert(data.message || 'Error occurred');
-        }
-      } catch (err) {
-        console.error('Error submitting form:', err);
-      }
-    });
-
-    //Edit user (fills form)
-    function editUser(id, name, email) {
-      modal.style.display = "flex";
-      modalTitle.innerText = 'Edit User';
-      submitBtn.innerText = 'Update User';
-      userIdInput.value = id;
-      userForm.name.value = name;
-      userForm.email.value = email;
-      userForm.password.value = ''; // Clear password field
-    }
-
-    //Delete user
-    async function deleteUser(id) {
-      if (!confirm('Are you sure you want to delete this user?')) return;
-      try {
-        const res = await fetch(`/deleteUser/${id}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (res.ok) {
-          alert('User deleted successfully!');
-          refreshUserList(); //Refresh after delete
-        } else {
-          alert(data.message || 'Failed to delete user');
-        }
-      } catch (err) {
-        console.error('Error deleting user:', err);
-      }
-    }
-    refreshUserList();
-  </script>
 
 
 </body>
