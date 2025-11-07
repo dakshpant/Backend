@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>
+    <%= title %>
+  </title>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background-color: #f5f6fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .user-card {
+      background: white;
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      width: 350px;
+    }
+
+    .user-card h2 {
+      margin-bottom: 8px;
+    }
+
+    .user-card p {
+      margin: 6px 0;
+    }
+
+    #toggleBtn {
+      padding: 10px 20px;
+      background-color: #0078ff;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.2s;
+      margin-top: 10px;
+    }
+
+    #toggleBtn.inactive {
+      background-color: #aaa;
+    }
+
+    #status {
+      font-weight: 600;
+      color: #0078ff;
+    }
+
+    #status.inactive {
+      color: #ff4d4d;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="user-card">
+    <h2>
+      <%= user.name %>
+    </h2>
+    <p>Email: <%= user.email %>
+    </p>
+
+
+    <% const status=user.twoFactorStatus || 'In-Active' ; %>
+
+      <p>
+        2FA Status:
+        <span id="status" class="<%= status === 'In-Active' ? 'inactive' : 'active' %>">
+          <%= status %>
+        </span>
+      </p>
+
+      <button id="toggleBtn" class="<%= status === 'In-Active' ? 'inactive' : '' %>">
+        <%= status==='In-Active' ? 'Activate 2FA' : 'Deactivate 2FA' %>
+      </button>
+  </div>
+
+  <script>
+    const toggleBtn = document.getElementById("toggleBtn");
+    const statusEl = document.getElementById("status");
+
+    toggleBtn.addEventListener("click", async () => {
+      toggleBtn.disabled = true;
+
+      try {
+        const response = await fetch("/api/users/toggle-2fa", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        });
+
+        const data = await response.json();
+        console.log("Response from server:", data);
+
+        if (data.success) {
+          const newStatus = data.data.twoFactorStatus || "In-Active";
+
+          statusEl.textContent = newStatus;
+          statusEl.classList.toggle("inactive", newStatus === "In-Active");
+
+          toggleBtn.textContent =
+            newStatus === "In-Active" ? "Activate 2FA" : "Deactivate 2FA";
+          toggleBtn.classList.toggle("inactive", newStatus === "In-Active");
+
+          alert(`2FA is now ${newStatus}`);
+        } else {
+          alert("Failed to toggle 2FA: " + data.message);
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        alert("Something went wrong while toggling 2FA.");
+      } finally {
+        toggleBtn.disabled = false;
+      }
+    });
+  </script>
+
+
+</body>
+
+</html>

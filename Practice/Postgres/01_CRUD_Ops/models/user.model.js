@@ -1,4 +1,4 @@
-import { DataTypes, Model } from "sequelize";
+import { DataTypes, ENUM, Model } from "sequelize";
 import sequelize from "../config/db.js";
 import bcrypt from "bcrypt";
 
@@ -33,6 +33,23 @@ User.init(
         notEmpty: true, // ensures password is not empty
       },
     },
+    twoFactorStatus: {
+      allowNull: false,
+      type: DataTypes.ENUM("Active", "In-Active"),
+      defaultValue: "In-Active",
+    },
+    twoFactorSecret: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    otp:{
+      type: DataTypes.STRING,
+      allowNull:true
+    },
+    otpExpires:{
+      type: DataTypes.DATE,
+      allowNull:true
+    }
   },
   {
     sequelize,
